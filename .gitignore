@@ -1,0 +1,10 @@
+# Eclipse files
+.classpath
+.project
+.settings/*
+
+# Git files
+.gitattributes
+
+# Java Files
+*.class
