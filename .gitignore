@@ -8,3 +8,6 @@
 
 # Java Files
 *.class
+
+# Game Files
+.game_settings
