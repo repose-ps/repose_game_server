@@ -1,7 +1,11 @@
-package com.repose.net;
+package com.repose.net.packet.in;
 
 import java.io.IOException;
 
+import com.repose.game.Account;
+import com.repose.net.ClientSession;
+import com.repose.net.packet.Packet;
+import com.repose.net.packet.Packet.PacketSizeType;
 import com.repose.util.ISAACRandomGenerator;
 
 /**
@@ -11,12 +15,12 @@ import com.repose.util.ISAACRandomGenerator;
  * 
  * @author Robert Guidry
  */
-public final class PacketDecoder {
+public final class PacketReceiver {
 
 	/**
 	 * The amount of bytes sent with each packet's opcode.
 	 */
-	private static final int[] PACKET_SIZES = { //
+	public static final int[] PACKET_SIZE = { //
 			0, 12, 0, 6, 6, 0, 0, 0, 2, 0, // 0
 			0, 0, 0, 2, 0, 0, 0, 0, 0, 4, // 10
 			0, 0, 0, 0, 6, 0, 0, 0, -1, 0, // 20
@@ -46,7 +50,12 @@ public final class PacketDecoder {
 	};
 
 	/**
-	 * The session this class is decoding packets for.
+	 * The account this packet decoder instance is decoding for.
+	 */
+	private final Account account;
+
+	/**
+	 * The account's network session.
 	 */
 	private final ClientSession session;
 
@@ -63,13 +72,15 @@ public final class PacketDecoder {
 	 * @param session   the session
 	 * @param isaacSeed the ISAAC seed
 	 */
-	public PacketDecoder(ClientSession session, int[] isaacSeed) {
-		this.session = session;
+	public PacketReceiver(Account account, int[] isaacSeed) {
+		this.account = account;
+		this.session = this.account.getSession();
 		this.incomingOpcodeRandom = new ISAACRandomGenerator(isaacSeed);
 		for (int i = 0; i < isaacSeed.length; i++) {
 			isaacSeed[i] += 50;
 		}
-		session.setOutgoingIsaac(isaacSeed);
+		this.session.setOutgoingIsaac(isaacSeed);
+
 		try {
 			startDecoding();
 		} catch (Exception e) {
@@ -91,11 +102,14 @@ public final class PacketDecoder {
 
 			// read the packet header
 			final int opcode = this.session.read() - this.incomingOpcodeRandom.nextInt() & 0xFF;
+			final PacketSizeType sizeType;
 			final int size;
-			if (PACKET_SIZES[opcode] == -1) {
+			if (PACKET_SIZE[opcode] == -1) {
 				size = this.session.read();
+				sizeType = PacketSizeType.VARIABLE_BYTE;
 			} else {
-				size = PACKET_SIZES[opcode];
+				size = PACKET_SIZE[opcode];
+				sizeType = PacketSizeType.FIXED;
 			}
 
 			// read the payload
@@ -107,9 +121,8 @@ public final class PacketDecoder {
 			// create a packet from the data
 			final byte[] payload = new byte[size];
 			this.session.getInputBuffer().get(payload);
-			
-			// TODO process packet
-			final Packet packet = new Packet(opcode, payload);
+			final Packet packet = new Packet(opcode, sizeType, payload);
+			this.session.queueIncomingPacket(packet);
 		}
 	}
 

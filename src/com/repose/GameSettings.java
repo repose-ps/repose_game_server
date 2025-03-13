@@ -29,6 +29,11 @@ public final class GameSettings {
 	public static final String CATEGORY_NETWORK = "network";
 
 	/**
+	 * The world settings category name as a String.
+	 */
+	public static final String CATEGORY_WORLD = "world";
+
+	/**
 	 * The name of the file used to read and write the settings to.
 	 */
 	private static final String SETTINGS_FILE_NAME = ".game_settings";
@@ -60,10 +65,25 @@ public final class GameSettings {
 	 * {@link Integer#parseInt(String)}, or {@code 0} if their is no value assigned
 	 * to the key.
 	 * 
-	 * @param key
-	 * @return
+	 * @param key the setting key
+	 * @return the int value, or 0 if there is no associated value for the key
 	 */
 	public static int getSettingAsInt(String key) {
+		final String value = getSetting(key);
+		if (value == null)
+			return 0;
+		return Integer.parseInt(value);
+	}
+
+	/**
+	 * Returns the value of the specified key name as a long value using
+	 * {@link Long#parseLong(String)}, or {@code 0} if their is no value assigned to
+	 * the key.
+	 * 
+	 * @param key the setting key
+	 * @return the long value, or 0 if there is no associated value for the key
+	 */
+	public static long getSettingAsLong(String key) {
 		final String value = getSetting(key);
 		if (value == null)
 			return 0;

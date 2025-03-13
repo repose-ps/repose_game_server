@@ -1,6 +1,11 @@
 package com.repose.game;
 
+import com.repose.game.entity.Player;
 import com.repose.net.ClientSession;
+import com.repose.net.packet.Packet;
+import com.repose.net.packet.Packet.PacketSizeType;
+import com.repose.net.packet.in.IncomingPacketDispatcher;
+import com.repose.net.packet.out.PacketBuilder;
 
 /**
  * The {@code Account} class represents a client's logged in profile. It
@@ -27,6 +32,11 @@ public final class Account {
 	private final String password;
 
 	/**
+	 * The player instance associated with this account's profile.
+	 */
+	private final Player player;
+
+	/**
 	 * Creates a new Account instance with the underlying session for communication
 	 * between the account's client and server.
 	 * 
@@ -38,6 +48,29 @@ public final class Account {
 		this.session = session;
 		this.username = username;
 		this.password = password;
+		this.player = new Player();
+	}
+
+	/**
+	 * Sends a message to this account's chat.
+	 * 
+	 * @param message the message
+	 */
+	public void sendChatMessage(String message) {
+		PacketBuilder builder = new PacketBuilder(63, PacketSizeType.VARIABLE_BYTE);
+		builder.putString(message);
+		this.getSession().queueOutgoingPacket(builder.toPacket());
+	}
+
+	/**
+	 * Sends the queued incoming packets to the {@code IncomingPacketDispatcher}
+	 * class to be processed.
+	 */
+	public void processIncomingPackets() {
+		Packet packet;
+		while ((packet = this.session.pollPacketQueue()) != null) {
+			IncomingPacketDispatcher.dispatch(this, packet);
+		}
 	}
 
 	/**
@@ -66,6 +99,15 @@ public final class Account {
 	 */
 	public String getPassword() {
 		return this.password;
+	}
+
+	/**
+	 * Returns the player character instance for this account's profile.
+	 * 
+	 * @return the player character instance
+	 */
+	public Player getPlayer() {
+		return this.player;
 	}
 
 }

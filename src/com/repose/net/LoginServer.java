@@ -9,6 +9,8 @@ import java.util.concurrent.TimeUnit;
 import com.repose.GameServer;
 import com.repose.GameSettings;
 import com.repose.game.Account;
+import com.repose.game.world.World;
+import com.repose.net.packet.in.PacketReceiver;
 
 import repose_game_commons.LoginConstants;
 
@@ -53,11 +55,6 @@ public final class LoginServer implements Runnable {
 			"43638693173095212661651276145954355357757536826209821036863223462528678427648430756613574768761336398692861588279321133691456566030707349531721301662335180843304046852390353009317726838021821225945846231275773507139951981544445388623189463140381966812844167115931771681306766013699111821859643650353959611591");
 
 	/**
-	 * Has this class been initialized?
-	 */
-	private static boolean initialized;
-
-	/**
 	 * Starts the login server's thread to start accepting incoming connections from
 	 * clients.
 	 */
@@ -70,16 +67,12 @@ public final class LoginServer implements Runnable {
 	}
 
 	/**
-	 * Initializes this class.
+	 * Initializes settings for the LoginServer class.
 	 */
-	public static void initialize() {
-		if (initialized) {
-			return;
-		}
+	public static void initSettings() {
 		final String category = GameSettings.CATEGORY_NETWORK;
 		GameSettings.setSetting(SETTING_LOGIN_PORT_KEY, SETTING_LOGIN_PORT_VALUE, category);
 		GameSettings.setSetting(SETTING_CLIENT_SO_TIMEOUT_KEY, SETTING_CLIENT_SO_TIMEOUT_VALUE, category);
-		initialized = true;
 	}
 
 	/**
@@ -232,17 +225,11 @@ public final class LoginServer implements Runnable {
 		// TODO profile / login validation
 
 		// create the account instance
-		// TODO add to world on server and client side
 		final Account account = new Account(username, password, session);
-
-		// write response
-		session.write(LoginConstants.RESPONSE_LOGIN_ACCEPTED);
-		session.write(0); // TODO privilege
-		session.write(0); // flagged
-		session.flush();
+		World.addAccount(account);
 
 		// start decoding packets
-		new PacketDecoder(session, isaacSeed);
+		new PacketReceiver(account, isaacSeed);
 	}
 
 }

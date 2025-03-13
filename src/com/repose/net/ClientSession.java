@@ -5,8 +5,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.util.LinkedList;
+import java.util.Queue;
 
 import com.repose.GameSettings;
+import com.repose.net.packet.Packet;
+import com.repose.net.packet.Packet.PacketSizeType;
 import com.repose.util.ISAACRandomGenerator;
 
 /**
@@ -20,7 +24,7 @@ public final class ClientSession {
 	/**
 	 * The setting name for the buffer size.
 	 */
-	private static final String SETTING_BUFFER_SIZE_KEY = "buffer_size";
+	public static final String SETTING_BUFFER_SIZE_KEY = "buffer_size";
 
 	/**
 	 * The default value for the buffer size setting.
@@ -30,7 +34,7 @@ public final class ClientSession {
 	/**
 	 * Initializes settings for the {@code ClientSession} class.
 	 */
-	public static final void initialize() {
+	public static final void initSettings() {
 		GameSettings.setSetting(SETTING_BUFFER_SIZE_KEY, SETTING_BUFFER_SIZE_VALUE, GameSettings.CATEGORY_NETWORK);
 	}
 
@@ -70,6 +74,13 @@ public final class ClientSession {
 	private ISAACRandomGenerator outgoingOpcodeRandom;
 
 	/**
+	 * The packets queued to be sent to the client.
+	 */
+	private final Queue<Packet> queuedOutgoingPackets;
+
+	private final Queue<Packet> queuedIncomingPackets;
+
+	/**
 	 * Creates a new {@code ClientSession} instance with the specified socket as the
 	 * underlying network communication.
 	 * 
@@ -84,6 +95,9 @@ public final class ClientSession {
 		final int bufferSize = GameSettings.getSettingAsInt(SETTING_BUFFER_SIZE_KEY);
 		this.inputBuffer = ByteBuffer.allocate(bufferSize);
 		this.outputBuffer = ByteBuffer.allocate(bufferSize);
+
+		this.queuedIncomingPackets = new LinkedList<>();
+		this.queuedOutgoingPackets = new LinkedList<>();
 	}
 
 	/**
@@ -210,7 +224,12 @@ public final class ClientSession {
 		return this.outputBuffer;
 	}
 
-	void setOutgoingIsaac(int[] seed) {
+	/**
+	 * Creates a new ISAACRandomGenerator instance from the specified ISAAC seed.
+	 * 
+	 * @param seed the ISAAC seed
+	 */
+	public void setOutgoingIsaac(int[] seed) {
 		this.outgoingOpcodeRandom = new ISAACRandomGenerator(seed);
 	}
 
@@ -247,8 +266,85 @@ public final class ClientSession {
 	 * 
 	 * @param opcode the opcode value
 	 */
-	public void writeOpcode(int opcode) {
+	private void writeOpcode(int opcode) {
 		this.write((byte) (opcode + this.outgoingOpcodeRandom.nextInt()));
 	}
 
+	/**
+	 * Adds an incoming packet instance to this session's incoming packet queue.
+	 * 
+	 * @param packet the incoming packet
+	 */
+	public void queueIncomingPacket(Packet packet) {
+		this.queuedIncomingPackets.add(packet);
+	}
+
+	/**
+	 * Adds an outgoing packet instance to this session's outgoing packet queue.
+	 * 
+	 * @param packet the outgoing packet
+	 */
+	public void queueOutgoingPacket(Packet packet) {
+		this.queuedOutgoingPackets.add(packet);
+	}
+
+	/**
+	 * Polls the next packet in the queued incoming packet queue.
+	 * 
+	 * @return the next packet, or null if the queue is empty
+	 */
+	public Packet pollPacketQueue() {
+		return this.queuedIncomingPackets.poll();
+	}
+
+	/**
+	 * Writes and flushes all of the outgoing packets for this session.
+	 */
+	public void writeOutgoingPackets() {
+		Packet packet;
+		while ((packet = this.queuedOutgoingPackets.poll()) != null) {
+
+			// validate packet size
+			final int size = packet.getPayload().length;
+			if (size > this.getOutputBuffer().capacity()) {
+				throw new IndexOutOfBoundsException("Packet too large: " + size);
+			}
+
+			// validate the amount of space in the out buffer
+			// flush if necessary
+			final int maxPosition = this.getOutputBuffer().position() + size + 3;
+			if (maxPosition >= this.getOutputBuffer().capacity()) {
+				try {
+					flush();
+				} catch (IOException e) {
+					close();
+					break;
+				}
+			}
+
+			// write the encrypted opcode
+			writeOpcode(packet.getOpcode());
+
+			// write the size if applicable
+			switch (packet.getSizeType()) {
+			case PacketSizeType.VARIABLE_BYTE:
+				this.getOutputBuffer().put((byte) size);
+				break;
+			case PacketSizeType.VARIABLE_SHORT:
+				this.getOutputBuffer().mark();
+				this.getOutputBuffer().putShort((short) size);
+				break;
+			case PacketSizeType.FIXED:
+				break;
+			}
+
+			// write the packet's payload
+			this.getOutputBuffer().put(packet.getPayload());
+		}
+		try {
+			flush();
+		} catch (IOException e) {
+			close();
+		}
+	}
 }

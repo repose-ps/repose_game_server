@@ -8,6 +8,7 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
+import com.repose.game.world.World;
 import com.repose.net.ClientSession;
 import com.repose.net.LoginServer;
 
@@ -37,8 +38,10 @@ public final class GameServer {
 	 */
 	public static void main(String[] args) {
 		try {
-			initialize();
+			initLogger();
+			initSettings();
 			GameSettings.loadSettingsFile();
+			initialize();
 			start();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -61,6 +64,7 @@ public final class GameServer {
 		running = true;
 		try {
 			LoginServer.start();
+			World.start();
 		} catch (IOException e) {
 			e.printStackTrace();
 			exit();
@@ -69,12 +73,20 @@ public final class GameServer {
 	}
 
 	/**
-	 * Initializes code in classes. Note that this is not for loading resources.
+	 * Initializes game code for classes after having the settings values loaded
+	 * from the file.
 	 */
 	private static void initialize() {
-		initLogger();
-		LoginServer.initialize();
-		ClientSession.initialize();
+		World.initialize();
+	}
+
+	/**
+	 * Initializes settings values in classes.
+	 */
+	public static void initSettings() {
+		LoginServer.initSettings();
+		ClientSession.initSettings();
+		World.initSettings();
 
 		LOGGER.info("Initialized server code.");
 	}
