@@ -26,7 +26,7 @@ public abstract class Actor extends Entity {
 	 * Updates the position of this Actor in the game world if they are moving or
 	 * teleporting.
 	 */
-	public void updatePosition() {
+	protected void updatePosition() {
 		if (isTeleporting()) {
 			this.setPosition(this.getStoredTeleport());
 		} else {
@@ -80,6 +80,16 @@ public abstract class Actor extends Entity {
 	 */
 	public TilePosition getStoredTeleport() {
 		return this.storedTeleport;
+	}
+
+	/**
+	 * If this Actor has something to update on the client-side, this will be set to
+	 * true.
+	 * 
+	 * @return true if the Actor needs to update
+	 */
+	public boolean isUpdating() {
+		return false;
 	}
 
 }

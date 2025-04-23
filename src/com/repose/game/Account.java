@@ -1,6 +1,6 @@
 package com.repose.game;
 
-import com.repose.game.entity.Player;
+import com.repose.game.entity.player.Player;
 import com.repose.net.ClientSession;
 import com.repose.net.packet.Packet;
 import com.repose.net.packet.Packet.PacketSizeType;
@@ -49,6 +49,7 @@ public final class Account {
 		this.username = username;
 		this.password = password;
 		this.player = new Player();
+		this.player.setUsername(username);
 	}
 
 	/**
@@ -71,6 +72,13 @@ public final class Account {
 		while ((packet = this.session.pollPacketQueue()) != null) {
 			IncomingPacketDispatcher.dispatch(this, packet);
 		}
+	}
+
+	/**
+	 * Updates this Account instance on the current tick to its current state.
+	 */
+	public void update() {
+		processIncomingPackets();
 	}
 
 	/**

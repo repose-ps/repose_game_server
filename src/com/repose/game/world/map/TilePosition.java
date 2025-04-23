@@ -153,6 +153,36 @@ public class TilePosition {
 	}
 
 	/**
+	 * Returns the amount of tiles that the specified position is away from this
+	 * one.
+	 * 
+	 * @param position the specified position
+	 * @return the amount of tiles
+	 */
+	public int absoluteDistanceTo(TilePosition position) {
+		final int distX = Math.abs(position.getX() - this.getX());
+		final int distY = Math.abs(position.getY() - this.getY());
+
+		return Math.max(distX, distY);
+	}
+
+	/**
+	 * Returns the delta of the maximum distance on the X or Y axis from the
+	 * specified position.
+	 * 
+	 * @param position the specified position
+	 * @return the maximum delta distance
+	 */
+	public int deltaDistance(TilePosition position) {
+		final int deltaX = position.getX() - this.getX();
+		final int deltaY = position.getY() - this.getY();
+
+		if (Math.abs(deltaX) > Math.abs(deltaY))
+			return deltaX;
+		return deltaY;
+	}
+
+	/**
 	 * Returns the tile X coordinate of this position.
 	 * 
 	 * @return the coordinate

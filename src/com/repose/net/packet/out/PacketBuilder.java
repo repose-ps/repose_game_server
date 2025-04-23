@@ -42,6 +42,14 @@ public final class PacketBuilder {
 	private int bitPosition = -1;
 
 	/**
+	 * Creates a new PacketBuilder without the need for an opcode or size type for
+	 * buffering purposes.
+	 */
+	public PacketBuilder() {
+		this(0, PacketSizeType.FIXED);
+	}
+
+	/**
 	 * Creates a new PacketBuilder instance.
 	 */
 	public PacketBuilder(int opcode, PacketSizeType sizeType) {
@@ -67,6 +75,20 @@ public final class PacketBuilder {
 	 */
 	public PacketBuilder putByte(int b) {
 		this.buffer.put((byte) (b & 0xFF));
+		return this;
+	}
+
+	/**
+	 * Puts a specified amount of bytes from the specified byte array starting
+	 * reading from the specified position.
+	 * 
+	 * @param b   the byte array
+	 * @param off the position
+	 * @param len the amount of bytes
+	 * @return the PacketBuilder instance
+	 */
+	public PacketBuilder putBytes(byte[] b, int off, int len) {
+		this.buffer.put(b, off, len);
 		return this;
 	}
 
@@ -182,5 +204,12 @@ public final class PacketBuilder {
 		this.buffer.position((this.bitPosition + 7) / 8);
 		this.bitPosition = -1;
 		return this;
+	}
+
+	/**
+	 * Clears the buffer and resets its position.
+	 */
+	public void clear() {
+		this.buffer.clear();
 	}
 }

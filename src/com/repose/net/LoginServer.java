@@ -8,11 +8,11 @@ import java.util.concurrent.TimeUnit;
 
 import com.repose.GameServer;
 import com.repose.GameSettings;
+import com.repose.commons.LoginConstants;
 import com.repose.game.Account;
+import com.repose.game.entity.player.PlayerModel;
 import com.repose.game.world.World;
 import com.repose.net.packet.in.PacketReceiver;
-
-import repose_game_commons.LoginConstants;
 
 /**
  * The {@code LoginServer} class handles incoming login attempts from user
@@ -221,6 +221,16 @@ public final class LoginServer implements Runnable {
 		// login details
 		final String username = session.readJagString();
 		final String password = session.readJagString();
+
+		long nameAsLong = PlayerModel.encodeUsernameAsLong(username);
+		int serverNameHash = (int) (nameAsLong >> 16 & 31L);
+
+		if (usernameHash != serverNameHash) {
+			session.write(LoginConstants.RESPONSE_MALFORMED_LOGIN);
+			session.flush();
+			session.close();
+			return;
+		}
 
 		// TODO profile / login validation
 

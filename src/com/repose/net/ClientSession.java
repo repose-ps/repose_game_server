@@ -302,6 +302,7 @@ public final class ClientSession {
 	 */
 	public void writeOutgoingPackets() {
 		Packet packet;
+		boolean disconnecting = false;
 		while ((packet = this.queuedOutgoingPackets.poll()) != null) {
 
 			// validate packet size
@@ -340,10 +341,19 @@ public final class ClientSession {
 
 			// write the packet's payload
 			this.getOutputBuffer().put(packet.getPayload());
+
+			if (packet.getOpcode() == 5) {
+				disconnecting = true;
+				return;
+			}
 		}
 		try {
 			flush();
 		} catch (IOException e) {
+			close();
+		}
+
+		if (disconnecting) {
 			close();
 		}
 	}

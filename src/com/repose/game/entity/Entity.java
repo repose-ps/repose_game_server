@@ -9,4 +9,7 @@ import com.repose.game.world.map.TilePosition;
  */
 public abstract class Entity extends TilePosition {
 
+	@Override
+	public abstract boolean equals(Object o);
+
 }

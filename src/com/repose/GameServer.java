@@ -1,13 +1,9 @@
 package com.repose;
 
 import java.io.IOException;
-import java.io.PrintStream;
-import java.text.SimpleDateFormat;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
+import com.repose.commons.CommonLogger;
 import com.repose.game.world.World;
 import com.repose.net.ClientSession;
 import com.repose.net.LoginServer;
@@ -22,11 +18,6 @@ import com.repose.net.LoginServer;
 public final class GameServer {
 
 	/**
-	 * The logger used for the application to log to the console.
-	 */
-	private static final Logger LOGGER = Logger.getLogger(GameServer.class.toString());
-
-	/**
 	 * Is the server application currently running?
 	 */
 	private static boolean running;
@@ -38,7 +29,6 @@ public final class GameServer {
 	 */
 	public static void main(String[] args) {
 		try {
-			initLogger();
 			initSettings();
 			GameSettings.loadSettingsFile();
 			initialize();
@@ -88,69 +78,7 @@ public final class GameServer {
 		ClientSession.initSettings();
 		World.initSettings();
 
-		LOGGER.info("Initialized server code.");
-	}
-
-	/**
-	 * Sets the initial settings of the game server logger.
-	 */
-	private static void initLogger() {
-		LOGGER.setUseParentHandlers(false);
-		LOGGER.setLevel(Level.FINEST);
-		LOGGER.addHandler(new Handler() {
-
-			private static SimpleDateFormat dateFormat = new SimpleDateFormat("MM-dd-yyyy HH:mm:ss.SSS");
-
-			@Override
-			public void publish(LogRecord record) {
-				if (!this.isLoggable(record))
-					return;
-
-				// build the message to log
-				StringBuilder message = new StringBuilder();
-
-				// level
-				message.append("[");
-				message.append(record.getLevel().toString());
-				message.append("]");
-
-				// time
-				message.append("[");
-				message.append(dateFormat.format(record.getMillis()));
-				message.append("]: ");
-
-				// message
-				message.append(record.getMessage());
-
-				// source
-				message.append(" [");
-				message.append(record.getSourceClassName());
-				message.append(".");
-				message.append(record.getSourceMethodName());
-				message.append("()");
-				message.append("]");
-
-				// the stream we are going to print to
-				final PrintStream consoleStream;
-				if (record.getLevel().intValue() >= Level.WARNING.intValue()) {
-					consoleStream = System.err;
-				} else {
-					consoleStream = System.out;
-				}
-
-				// print the built message to the console
-				consoleStream.println(message.toString());
-			}
-
-			@Override
-			public void flush() {
-			}
-
-			@Override
-			public void close() throws SecurityException {
-			}
-		});
-		LOGGER.info("Logger created!");
+		getLogger().info("Initialized server code.");
 	}
 
 	/**
@@ -159,7 +87,7 @@ public final class GameServer {
 	 * @return the logger instance
 	 */
 	public static Logger getLogger() {
-		return LOGGER;
+		return CommonLogger.getLogger();
 	}
 
 	/**
@@ -169,6 +97,15 @@ public final class GameServer {
 	 */
 	public static boolean isRunning() {
 		return running;
+	}
+
+	/**
+	 * Sends a FINEST level log message to the server logger.
+	 * 
+	 * @param message the message to send
+	 */
+	public static void debug(String message) {
+		getLogger().finest("[DEBUG]: " + message);
 	}
 
 	/**

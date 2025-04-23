@@ -22,7 +22,7 @@ public final class IncomingPacketDispatcher {
 
 	static {
 	}
-	
+
 	/**
 	 * Handles an incoming packet to be processed by the specified account.
 	 * 
@@ -31,9 +31,9 @@ public final class IncomingPacketDispatcher {
 	 */
 	public static void dispatch(Account account, Packet packet) {
 		final IncomingPacketHandler handler = HANDLERS[packet.getOpcode()];
-		
-		if(handler == null) {
-			GameServer.getLogger().warning("Unhandled packet: "+packet.toString());
+
+		if (handler == null) {
+			GameServer.getLogger().fine("Unhandled packet: " + packet.toString());
 		} else {
 			final ByteBuffer buffer = ByteBuffer.wrap(packet.getPayload());
 			handler.handlePacket(account, packet, buffer);

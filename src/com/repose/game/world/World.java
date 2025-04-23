@@ -11,13 +11,12 @@ import java.util.function.Consumer;
 
 import com.repose.GameServer;
 import com.repose.GameSettings;
+import com.repose.commons.LoginConstants;
+import com.repose.commons.PacketConstants;
 import com.repose.game.Account;
 import com.repose.net.ClientSession;
 import com.repose.net.packet.Packet.PacketSizeType;
 import com.repose.net.packet.out.PacketBuilder;
-
-import repose_game_commons.LoginConstants;
-import repose_game_commons.PacketConstants;
 
 /**
  * The {@code World} class handles updating the game world and the entities
@@ -69,6 +68,21 @@ public final class World {
 		}
 	}
 
+	public static void removeAccount(Account account) {
+		// remove from world
+		final int worldIndex = account.getPlayer().getWorldIndex();
+
+		if (worldIndex == -1)
+			return;
+
+		if (accounts[worldIndex] != null && accounts[worldIndex].equals(account)) {
+			accounts[worldIndex] = null;
+		}
+		account.getPlayer().setWorldIndex(-1);
+		account.getSession().close();
+		System.out.println("Logout for " + account.getUsername());
+	}
+
 	public static void start() {
 		final long tickPeriod = GameSettings.getSettingAsLong(WorldSettings.SETTING_TICK_PERIOD_KEY);
 		final TimeUnit tickUnit = TimeUnit.valueOf(GameSettings.getSetting(WorldSettings.SETTING_TICK_UNIT_KEY));
@@ -93,20 +107,29 @@ public final class World {
 		synchronized (accountsLoggingIn) {
 			addAccountsLoggingIn();
 		}
-		removeDisconnectedAccounts();
+
+		// update the accounts
+		forEachAccount(account -> account.update());
 
 		// handle queued account packets
 		forEachAccount(account -> account.processIncomingPackets());
-		removeDisconnectedAccounts();
 
 		// update account's player movement
 		forEachAccount(account -> account.getPlayer().updatePosition());
+
+		// remove accounts no longer connected
+		removeDisconnectedAccounts();
 
 		// write scene packet
 		forEachAccount(account -> World.writeUpdateScenePlayersPacket(account));
 
 		// send each accounts outgoing packets
 		forEachAccount(account -> account.getSession().writeOutgoingPackets());
+
+		// clear update flags for accounts
+		forEachAccount(account -> account.getPlayer().clearStoredVariables());
+
+		// remove accounts no longer connected
 		removeDisconnectedAccounts();
 	}
 
@@ -119,19 +142,13 @@ public final class World {
 		Arrays.stream(accounts).filter(Objects::nonNull).forEach(account -> consumer.accept(account));
 	}
 
-	/**
-	 * Removes accounts from the world that have disconnected.
-	 */
 	private static void removeDisconnectedAccounts() {
 		for (int i = 1; i < accounts.length; i++) {
-			final Account account = accounts[i];
-			if (account == null)
+			if (accounts[i] == null || !accounts[i].getSession().isClosed())
 				continue;
-			if (account.getSession().isClosed()) {
-				accounts[i] = null;
-				account.getPlayer().setWorldIndex(-1);
-				System.out.println("Logout for " + account.getUsername());
-			}
+			GameServer.getLogger().finer("Logout for " + accounts[i].getUsername());
+			accounts[i].getPlayer().getPosition().setPosition(0, 0, 0);
+			accounts[i] = null;
 		}
 	}
 
@@ -178,11 +195,11 @@ public final class World {
 
 	private static void writeUpdateScenePlayersPacket(Account account) {
 		// update the loaded map first
-		if (account.getPlayer().isMapUpdating()) {
+		if (account.getPlayer().getScene().isMapUpdating()) {
 			PacketBuilder mapBuilder = new PacketBuilder(PacketConstants.LOAD_MAP_AROUND_PLAYER_OPCODE,
 					PacketSizeType.FIXED);
-			mapBuilder.putShort(account.getPlayer().getLoadedCenterRegionX());
-			mapBuilder.putShort(account.getPlayer().getLoadedCenterRegionY());
+			mapBuilder.putShort(account.getPlayer().getScene().getLoadedCenterRegionX());
+			mapBuilder.putShort(account.getPlayer().getScene().getLoadedCenterRegionY());
 			account.getSession().queueOutgoingPacket(mapBuilder.toPacket());
 		}
 
@@ -191,30 +208,14 @@ public final class World {
 				PacketSizeType.VARIABLE_SHORT);
 
 		sceneBuilder.startBitBlock();
-
-		if (!account.getPlayer().isTeleporting()) {
-			sceneBuilder.putBits(1, 1);
-			sceneBuilder.putBits(2, 0);
-		} else {
-			sceneBuilder.putBits(1, 1);
-			sceneBuilder.putBits(2, 3);
-			sceneBuilder.putBits(1, 0);
-			sceneBuilder.putBits(2, account.getPlayer().getStoredTeleport().getPlane() % 4);
-			sceneBuilder.putBits(7, account.getPlayer().getLocalY());
-			sceneBuilder.putBits(7, account.getPlayer().getLocalX());
-			sceneBuilder.putBits(1, 1); // block update
-		}
-		// TODO walking/running/update block
-
-		// old scene players update
-		// TODO
-		sceneBuilder.putBits(8, 0);
-
-		sceneBuilder.putBits(11, 2047);
+		account.getPlayer().getScene().appendLocalPlayerUpdate(sceneBuilder);
+		account.getPlayer().getScene().updateOldPlayers(sceneBuilder);
+		account.getPlayer().getScene().addNewPlayers(sceneBuilder);
 		sceneBuilder.endBitBlock();
 
-		// update block for local player
-		sceneBuilder.putByte(0);
+		if (account.getPlayer().getScene().hasQueuedUpdateBlocks()) {
+			account.getPlayer().getScene().writeUpdateBlocks(sceneBuilder);
+		}
 
 		account.getSession().queueOutgoingPacket(sceneBuilder.toPacket());
 	}
