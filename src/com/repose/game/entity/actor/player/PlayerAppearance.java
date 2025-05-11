@@ -1,4 +1,4 @@
-package com.repose.game.entity.player;
+package com.repose.game.entity.actor.player;
 
 public enum PlayerAppearance {
 	/**

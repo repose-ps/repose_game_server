@@ -5,6 +5,7 @@ import java.util.logging.Logger;
 
 import com.repose.commons.CommonLogger;
 import com.repose.game.world.World;
+import com.repose.io.cache.Cache;
 import com.repose.net.ClientSession;
 import com.repose.net.LoginServer;
 
@@ -32,8 +33,9 @@ public final class GameServer {
 			initSettings();
 			GameSettings.loadSettingsFile();
 			initialize();
+			loadData();
 			start();
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			exit();
 		}
@@ -81,6 +83,13 @@ public final class GameServer {
 		getLogger().info("Initialized server code.");
 	}
 
+	/**
+	 * Loads game data files from the file system.
+	 */
+	public static void loadData() throws Exception {
+		Cache.load();
+	}
+	
 	/**
 	 * Returns the application's logger instance.
 	 * 

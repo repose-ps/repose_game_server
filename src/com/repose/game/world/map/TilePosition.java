@@ -4,6 +4,9 @@ import java.awt.Point;
 import java.awt.geom.Point2D;
 import java.util.Objects;
 
+import com.repose.io.cache.map.MapChunk;
+import com.repose.io.cache.map.MapRegion;
+
 /**
  * Represents a single tile's coordinates within the game world.
  */
@@ -180,6 +183,18 @@ public class TilePosition {
 		if (Math.abs(deltaX) > Math.abs(deltaY))
 			return deltaX;
 		return deltaY;
+	}
+
+	/**
+	 * Offsets the position of this tile position by the specified coordinate
+	 * values.
+	 * 
+	 * @param offsetX the X coordinate offset
+	 * @param offsetY the Y coordinate offset
+	 */
+	public void offset(int offsetX, int offsetY) {
+		this.setX(this.getX() + offsetX);
+		this.setY(this.getY() + offsetY);
 	}
 
 	/**

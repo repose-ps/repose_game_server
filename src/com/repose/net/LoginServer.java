@@ -10,7 +10,7 @@ import com.repose.GameServer;
 import com.repose.GameSettings;
 import com.repose.commons.LoginConstants;
 import com.repose.game.Account;
-import com.repose.game.entity.player.PlayerModel;
+import com.repose.game.entity.actor.player.PlayerModel;
 import com.repose.game.world.World;
 import com.repose.net.packet.in.PacketReceiver;
 

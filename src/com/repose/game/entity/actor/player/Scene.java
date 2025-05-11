@@ -1,6 +1,7 @@
-package com.repose.game.entity.player;
+package com.repose.game.entity.actor.player;
 
 import com.repose.game.world.World;
+import com.repose.game.world.map.Direction;
 import com.repose.net.packet.out.PacketBuilder;
 
 /**
@@ -137,8 +138,10 @@ public final class Scene {
 	public void appendLocalPlayerUpdate(PacketBuilder builder) {
 		final boolean teleporting = this.player.isTeleporting();
 		final boolean updating = this.player.isUpdating();
-		final boolean walking = false; // TODO
-		final boolean running = false; // TODO
+		final Direction dir1 = this.player.getFirstDirection();
+		final Direction dir2 = this.player.getSecondDirection();
+		final boolean walking = !dir1.equals(Direction.NONE);
+		final boolean running = !dir2.equals(Direction.NONE);
 
 		if (!teleporting && !updating && !walking && !running) {
 			builder.putBit(false); // we are not sending an update
@@ -150,18 +153,18 @@ public final class Scene {
 		if (teleporting) {
 			builder.putBits(2, 3); // teleport update type
 			builder.putBit(true); // discard walking queue == 1
-			builder.putBits(2, this.player.getStoredTeleport().getPlane());
+			builder.putBits(2, this.player.getPlane());
 			builder.putBits(7, this.player.getLocalY());
 			builder.putBits(7, this.player.getLocalX());
 			builder.putBit(this.player.isUpdating());
 		} else if (running) {
 			builder.putBits(2, 2); // running update type
-			builder.putBits(3, 0); // TODO direction 1
-			builder.putBits(3, 0); // TODO direction 2
+			builder.putBits(3, dir1.toInteger());
+			builder.putBits(3, dir2.toInteger());
 			builder.putBit(this.player.isUpdating());
 		} else if (walking) {
 			builder.putBits(2, 1); // walking update type
-			builder.putBits(3, 0); // TODO direction
+			builder.putBits(3, dir1.toInteger());
 			builder.putBit(this.player.isUpdating());
 		} else if (updating) {
 			builder.putBits(2, 0); // block update update type
@@ -258,8 +261,10 @@ public final class Scene {
 			final PlayerModel other = this.scenePlayers[i];
 
 			final boolean blockUpdate = other.isUpdating();
-			final boolean walking = false; // TODO
-			final boolean running = false; // TODO
+			final Direction dir1 = other.getFirstDirection();
+			final Direction dir2 = other.getSecondDirection();
+			final boolean walking = !dir1.equals(Direction.NONE);
+			final boolean running = !dir2.equals(Direction.NONE);
 			final boolean teleporting = this.scenePlayers[i].isTeleporting();
 
 			final int delta = this.player.deltaDistance(other);
@@ -276,19 +281,19 @@ public final class Scene {
 			final boolean added = this.addPlayerToScene(other);
 
 			if (outOfVision || teleporting || !added) {
+				System.out.println("removing update");
 				builder.putBits(2, 3); // remove update
 				continue;
 			}
 
-			this.addPlayerToScene(other);
 			if (running) {
 				builder.putBits(2, 2); // running update
-				builder.putBits(3, 0); // TODO direction1
-				builder.putBits(3, 0); // TODO direction2
+				builder.putBits(3, dir1.toInteger());
+				builder.putBits(3, dir2.toInteger());
 				builder.putBit(blockUpdate);
 			} else if (walking) {
 				builder.putBits(2, 1); // walking update
-				builder.putBits(3, 0);// TODO direction
+				builder.putBits(3, dir1.toInteger());
 				builder.putBit(blockUpdate);
 			} else {
 				builder.putBits(2, 0); // block update update
@@ -297,8 +302,9 @@ public final class Scene {
 			if (blockUpdate) {
 				this.appendUpdateBlock(other, false);
 			}
-
 		}
+		System.out.println(this.player.getUsername() + ": "+oldPlayerCount 
+				+" "+scenePlayerCount);
 	}
 
 }

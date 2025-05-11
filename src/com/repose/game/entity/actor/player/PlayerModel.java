@@ -1,9 +1,9 @@
-package com.repose.game.entity.player;
+package com.repose.game.entity.actor.player;
 
 import java.util.Arrays;
 
-import com.repose.game.entity.Actor;
-import com.repose.game.entity.player.PlayerEquipment.EquipmentSlot;
+import com.repose.game.entity.actor.Actor;
+import com.repose.game.entity.actor.player.PlayerEquipment.EquipmentSlot;
 import com.repose.net.packet.out.PacketBuilder;
 
 /**

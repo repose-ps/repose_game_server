@@ -115,7 +115,10 @@ public final class World {
 		forEachAccount(account -> account.processIncomingPackets());
 
 		// update account's player movement
-		forEachAccount(account -> account.getPlayer().updatePosition());
+		forEachAccount(account -> {
+			account.getPlayer().getWalkingQueue().pulse();
+			account.getPlayer().getScene().updateMap();
+		});
 
 		// remove accounts no longer connected
 		removeDisconnectedAccounts();
@@ -147,6 +150,7 @@ public final class World {
 			if (accounts[i] == null || !accounts[i].getSession().isClosed())
 				continue;
 			GameServer.getLogger().finer("Logout for " + accounts[i].getUsername());
+			accounts[i].getPlayer().setWorldIndex(-1);
 			accounts[i].getPlayer().getPosition().setPosition(0, 0, 0);
 			accounts[i] = null;
 		}

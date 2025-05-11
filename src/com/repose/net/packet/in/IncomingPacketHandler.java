@@ -19,4 +19,11 @@ public interface IncomingPacketHandler {
 	 */
 	public abstract void handlePacket(Account account, Packet packet, ByteBuffer packetBuffer);
 
+	public static String readString(ByteBuffer buffer) {
+		final int start = buffer.position();
+		while (buffer.get() != 10)
+			;
+		return new String(buffer.array(), start, buffer.position() - 1);
+	}
+
 }

@@ -1,6 +1,6 @@
 package com.repose.game;
 
-import com.repose.game.entity.player.Player;
+import com.repose.game.entity.actor.player.Player;
 import com.repose.net.ClientSession;
 import com.repose.net.packet.Packet;
 import com.repose.net.packet.Packet.PacketSizeType;

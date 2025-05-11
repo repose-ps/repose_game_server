@@ -1,9 +1,9 @@
-package com.repose.game.entity.player;
+package com.repose.game.entity.actor.player;
 
 import java.util.concurrent.ThreadLocalRandom;
 
 import com.repose.game.Account;
-import com.repose.game.world.map.MapRegion;
+import com.repose.io.cache.map.MapRegion;
 
 /**
  * The {@code Player} class represents a {@link PlayerModel} instance that is
@@ -17,7 +17,7 @@ public final class Player extends PlayerModel {
 	 * Creates a new Player instance.
 	 */
 	public Player() {
-		this.getStoredTeleport().setPosition(3222, 3222, 0);
+		this.teleport(3222, 3222, 0);
 		this.scene = new Scene(this);
 
 		// TODO remove debug
@@ -31,7 +31,8 @@ public final class Player extends PlayerModel {
 	@Override
 	public void setWorldIndex(int index) {
 		super.setWorldIndex(index);
-		this.getStoredTeleport().setPosition(3222, 3222 + index, 0);
+
+		this.teleport(3222, 3222 + index, 0); // TODO debug for multiplayer rendering
 	}
 
 	/**
@@ -65,17 +66,6 @@ public final class Player extends PlayerModel {
 	public void clearStoredVariables() {
 		super.clearStoredVariables();
 		this.getScene().clearStoredVariables();
-	}
-
-	/**
-	 * Updates this player's position and checks if a map update needs to be sent.
-	 */
-	@Override
-	public void updatePosition() {
-		super.updatePosition();
-
-		// update the center region if necessary
-		this.getScene().updateMap();
 	}
 
 	public Scene getScene() {

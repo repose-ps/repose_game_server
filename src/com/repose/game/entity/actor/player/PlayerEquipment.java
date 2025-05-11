@@ -1,4 +1,4 @@
-package com.repose.game.entity.player;
+package com.repose.game.entity.actor.player;
 
 import com.repose.game.item.ItemInventory;
 import com.repose.game.item.ItemStack;

@@ -11,5 +11,7 @@ public abstract class Entity extends TilePosition {
 
 	@Override
 	public abstract boolean equals(Object o);
-
+	
+	
+	
 }
